@@ -1,0 +1,57 @@
+import requests
+import pandas as pd
+
+# API keys and base URLs
+VIRUSTOTAL_API_KEY = 'YOUR_VIRUSTOTAL_API_KEY'
+ABUSEIPDB_API_KEY = 'YOUR_ABUSEIPDB_API_KEY'
+SHODAN_API_KEY = 'YOUR_SHODAN_API_KEY'
+
+def get_virustotal_report(ip):
+    url = f'https://www.virustotal.com/api/v3/ip_addresses/{ip}'
+    headers = {'x-apikey': VIRUSTOTAL_API_KEY}
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    return None
+
+def get_abuseipdb_report(ip):
+    url = f'https://api.abuseipdb.com/api/v2/check?ipAddress={ip}&maxAgeInDays=90'
+    headers = {
+        'Key': ABUSEIPDB_API_KEY,
+        'Accept': 'application/json'
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    return None
+
+def get_shodan_report(ip):
+    url = f'https://api.shodan.io/shodan/host/{ip}?key={SHODAN_API_KEY}'
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return None
+
+def aggregate_reports(ip):
+    vt_report = get_virustotal_report(ip)
+    abuse_report = get_abuseipdb_report(ip)
+    shodan_report = get_shodan_report(ip)
+
+    report = {
+        'IP': ip,
+        'VirusTotal': vt_report,
+        'AbuseIPDB': abuse_report,
+        'Shodan': shodan_report
+    }
+    return report
+
+# Sample usage
+if __name__ == '__main__':
+    ips_to_check = ['8.8.8.8', '1.1.1.1']  # Example IPs
+    reports = []
+    for ip in ips_to_check:
+        report = aggregate_reports(ip)
+        reports.append(report)
+    df = pd.DataFrame(reports)
+    df.to_csv('threat_intel_report.csv', index=False)
+    print("Threat intelligence report saved as 'threat_intel_report.csv'")
